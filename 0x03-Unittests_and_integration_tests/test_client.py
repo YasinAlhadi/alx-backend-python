@@ -3,7 +3,7 @@
 """
 import unittest
 from unittest.mock import patch, PropertyMock
-from parameterized import parameterized
+from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
 from fixtures import TEST_PAYLOAD
 from typing import (
@@ -19,7 +19,7 @@ class TestGithubOrgClient(unittest.TestCase):
         ("abc"),
     ])
     @patch('client.get_json')
-    def test_org(self, org_name: str, mock_get_json):
+    def test_org(self, org_name: str, mock_get_json) -> None:
         """Test that GithubOrgClient.org returns the correct value"""
         test_class = GithubOrgClient(org_name)
         test_class.org()
@@ -27,7 +27,7 @@ class TestGithubOrgClient(unittest.TestCase):
             f'https://api.github.com/orgs/{org_name}'
         )
 
-    def test_public_repos_url(self):
+    def test_public_repos_url(self) -> None:
         """Test that the result of _public_repos_url is the expected one
         based on the mocked payload
         """
@@ -42,7 +42,7 @@ class TestGithubOrgClient(unittest.TestCase):
             mock_org.assert_called_once_with()
 
     @patch('client.get_json')
-    def test_public_repos(self, mock_get_json):
+    def test_public_repos(self, mock_get_json) -> None:
         """Test that the list of repos is what you expect from the chosen
         payload
         """
@@ -63,10 +63,37 @@ class TestGithubOrgClient(unittest.TestCase):
         ({"license": {"key": "my_license"}}, "my_license", True),
         ({"license": {"key": "other_license"}}, "my_license", False),
     ])
-    def test_has_license(self, repo, license_key, expected):
+    def test_has_license(self, repo: Dict, license_key: str, expected) -> None:
         """Test has_license method"""
         test_class = GithubOrgClient("test")
         self.assertEqual(
             test_class.has_license(repo, license_key),
             expected
+        )
+
+
+class TestIntegrationGithubOrgClient(unittest.TestCase):
+    """TestGithubOrgClient class"""
+    @classmethod
+    def setUpClass(cls):
+        """Set up class"""
+        cls.get_patcher = patch('requests.get')
+        cls.get_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Tear down class"""
+        cls.get_patcher.stop()
+
+    @parameterized.expand([
+        ("google"),
+        ("abc"),
+    ])
+    def test_public_repos(self, org_name: str):
+        """Test that GithubOrgClient.public_repos returns the correct list
+        of repos
+        """
+        test_class = GithubOrgClient(org_name)
+        self.assertEqual(
+            test_class.public_repos(), []
         )
